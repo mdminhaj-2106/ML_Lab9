@@ -167,7 +167,7 @@ def exploratory(df, axis):
 
 
 def plot_exploration(data):
-    fig, axes = plt.subplots(2, 4, figsize=(14, 7))
+    fig, axes = plt.subplots(2, 4, figsize=(14, 9))
     for i, (axis, df) in enumerate(data.items()):
         ax = axes[i]
         for c in ("fbg1", "fbg2"):
@@ -198,7 +198,7 @@ def plot_results(results, preds):
             ax.invert_yaxis(); ax.set_title(f"{axis}: {metric}")
             ax.tick_params(axis="y", labelsize=7)
     fig.tight_layout(); fig.savefig(OUT / "model_comparison.png", dpi=160); plt.close(fig)
-    fig, axes = plt.subplots(2, 4, figsize=(13, 7))
+    fig, axes = plt.subplots(2, 4, figsize=(13, 10))
     stat = {"SLR", "MLR", "Polynomial", "Ridge", "Lasso", "Elastic Net"}
     for i, axis in enumerate(("axial", "transverse")):
         r = results[(results.axis == axis) & (results.configuration == "nested-tuned")]

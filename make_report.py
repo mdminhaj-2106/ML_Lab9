@@ -1,127 +1,151 @@
-"""Build the six-page submission PDF from the executed lab results."""
+"""Build the submission PDF from the executed lab results."""
 from pathlib import Path
 import json
-
 import pandas as pd
+from PIL import Image as PILImage
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_CENTER
-from reportlab.lib.utils import ImageReader
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak, KeepTogether
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.platypus import Image, PageBreak, Paragraph, SimpleDocTemplate, Table, TableStyle
 
 ROOT = Path(__file__).parent
 OUT = ROOT / "results"
+PDF = ROOT / "Md_Minha_Uddin_2401CS39_lab9.pdf"
 R = pd.read_csv(OUT / "all_model_results.csv")
 F = pd.read_csv(OUT / "feature_comparison.csv")
 A = pd.read_csv(OUT / "advanced_signed_absolute.csv")
 S = json.loads((OUT / "dataset_summary.json").read_text())
-PDF = ROOT / "Md_Minha_Uddin_2401CS39_lab9.pdf"
+P = pd.read_csv(OUT / "all_observation_predictions.csv")
 
 styles = getSampleStyleSheet()
-styles.add(ParagraphStyle(name="LabTitle", parent=styles["Title"], fontName="Helvetica-Bold", fontSize=17, leading=20, textColor=colors.HexColor("#12334b"), spaceAfter=9))
-styles.add(ParagraphStyle(name="LabH", parent=styles["Heading2"], fontName="Helvetica-Bold", fontSize=10.5, leading=13, textColor=colors.HexColor("#12334b"), spaceBefore=7, spaceAfter=4))
-styles.add(ParagraphStyle(name="LabBody", parent=styles["Normal"], fontName="Helvetica", fontSize=8.4, leading=11.3, spaceAfter=5))
-styles.add(ParagraphStyle(name="LabSmall", parent=styles["Normal"], fontName="Helvetica", fontSize=7.1, leading=9.3, spaceAfter=3))
+styles.add(ParagraphStyle(name="TitleLab", parent=styles["Title"], fontName="Helvetica-Bold", fontSize=16, leading=19, textColor=colors.HexColor("#173b52"), spaceAfter=5))
+styles.add(ParagraphStyle(name="HeadingLab", parent=styles["Heading2"], fontName="Helvetica-Bold", fontSize=10, leading=12, textColor=colors.HexColor("#173b52"), spaceBefore=7, spaceAfter=3))
+styles.add(ParagraphStyle(name="BodyLab", parent=styles["Normal"], fontName="Helvetica", fontSize=8.4, leading=11.2, spaceAfter=4))
+styles.add(ParagraphStyle(name="SmallLab", parent=styles["Normal"], fontName="Helvetica", fontSize=7.2, leading=9.3, spaceAfter=3))
 
+def h(s): return Paragraph(s, styles["HeadingLab"])
+def p(s, small=False): return Paragraph(s, styles["SmallLab" if small else "BodyLab"])
 
-def p(text, small=False): return Paragraph(text, styles["LabSmall" if small else "LabBody"])
-def h(text): return Paragraph(text, styles["LabH"])
+def t(rows, widths, size=7, pad=2):
+    x = Table(rows, colWidths=widths, repeatRows=1, hAlign="LEFT")
+    x.setStyle(TableStyle([
+        ("FONTNAME", (0, 0), (-1, -1), "Helvetica"),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, -1), size),
+        ("LEADING", (0, 0), (-1, -1), size + 1.5),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#dceaf0")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f4f8fa")]),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), pad),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), pad),
+        ("LINEBELOW", (0, -1), (-1, -1), .5, colors.HexColor("#aebfc8")),
+    ]))
+    return x
 
-
-def table(rows, widths=None, size=7.0, header=True):
-    t = Table(rows, colWidths=widths, repeatRows=1 if header else 0, hAlign="LEFT")
-    commands = [("FONTNAME", (0, 0), (-1, -1), "Helvetica"), ("FONTSIZE", (0, 0), (-1, -1), size),
-                ("LEADING", (0, 0), (-1, -1), size+2), ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-                ("LEFTPADDING", (0, 0), (-1, -1), 4), ("RIGHTPADDING", (0, 0), (-1, -1), 4),
-                ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
-                ("LINEBELOW", (0, -1), (-1, -1), .5, colors.HexColor("#b5c4cc"))]
-    if header:
-        commands += [("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#dbe9ef")),
-                     ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold")]
-    for i in range(1 if header else 0, len(rows)):
-        if i % 2 == 0: commands.append(("BACKGROUND", (0, i), (-1, i), colors.HexColor("#f4f8fa")))
-    t.setStyle(TableStyle(commands))
-    return t
-
-
-def figure(name, width=516):
-    from PIL import Image as PILImage
+def fig(name, width=515):
     im = PILImage.open(OUT / name)
     return Image(str(OUT / name), width=width, height=width * im.height / im.width)
 
+def family_table(axis):
+    sub = R[(R.axis == axis) & (R.configuration == "nested-tuned")].sort_values("RMSE")
+    rows = [["Model", "MAE", "MSE", "RMSE", "R2", "Fit ms", "Feat."]]
+    rows += [[x.model, f"{x.MAE:.2f}", f"{x.MSE:.1f}", f"{x.RMSE:.2f}", f"{x.R2:.3f}", f"{x.train_s*1000:.2f}", x.feature_mode] for x in sub.itertuples()]
+    return t(rows, [127, 58, 63, 58, 55, 68, 87], size=7, pad=2)
 
-story = []
-story += [Paragraph("FBG tilt angle prediction", styles["LabTitle"]),
-          p("Md Minha Uddin | Roll no. 2401CS39 | Machine Learning Laboratory, Experiment 06 | 13 October 2026"),
-          h("What I did"),
-          p("I used the two experimental sheets from the given workbook. Each has 37 actual readings, including row 1. The theoretical sheet and the extra chart data on the right of the workbook were left out. The target is angle in degrees; the starting inputs are the two wavelength changes (columns D and E)."),
-          p("I tried the original pair (F1), their difference (F2), their average (F3), and difference plus average (F4). I checked the supplied F and G columns against my calculations; they match. The four choices are not four independent sources of information: F1 and F4 are just invertible ways of writing the same two readings."),
-          h("Validation and leakage control"),
-          p("For each axis I used five GroupKFold outer folds, grouped by angle so repeated measurements at one angle stay together. Within each outer training set, four grouped inner folds selected the feature configuration and model hyperparameter. StandardScaler sits inside each fitted pipeline. I joined the 37 outer-fold predictions before calculating MAE, MSE, RMSE and R-squared. Training time is the mean final fit time per outer fold, excluding the tuning search; it is only a rough comparison on this tiny dataset."),
-          h("One model from start to finish: GPR"),
-          p("<b>Flow:</b> experimental D/E changes &rarr; compute F1/F2/F3/F4 &rarr; grouped outer training/test split &rarr; grouped inner selection of features and RBF/Matérn kernel &rarr; fit scaler on training rows &rarr; fit Gaussian process &rarr; predict held-out angles &rarr; collect errors. Repeat for all five outer folds."),
-          p("<b>Algorithm:</b> 1) Make five angle groups. 2) For each outer fold, score every allowed feature/kernel pair in four inner grouped folds using RMSE. 3) Refit the best pair on the whole outer training split. 4) Predict the untouched outer test split. 5) Aggregate all 37 predictions. Seed 42 is used for the stochastic tree models."),
-          h("Dataset checks"),
-          table([["Axis", "Rows", "Angle range", "Missing", "Exact duplicate rows", "Repeated angles"],
-                 ["Axial", "37", "-90 to +90 deg", "0", str(S["axial"]["duplicate_rows"]), "17 angle values"],
-                 ["Transverse", "37", "-90 to +90 deg", "0", str(S["transverse"]["duplicate_rows"]), "17 angle values"]],
-                [68, 42, 105, 55, 106, 116]),
-          Spacer(1, 5),
-          p("The axial sheet has two exact repeats; I kept them because they are recorded observations. Most non-endpoint angles have two readings and zero has three. No rows were added or imputed. The full descriptive statistics and every row-wise prediction are saved with the code.", True),
-          p("Data: Kuo Li, <i>FBG biaxial tilt sensor using one optical fiber</i>, Mendeley Data, doi:10.17632/f4csv2xjk6.1 (CC BY 4.0).", True),
-          PageBreak()]
-
-story += [h("Feature check (five grouped folds; linear model only)"),
-          table([["Axis", "F1 pair", "F2 diff", "F3 average", "F4 diff+avg"]] +
-                [[axis.capitalize()] + [f"{F[(F.axis==axis)&(F.feature==key)].iloc[0].linear_grouped_RMSE:.2f}" for key in ("F1","F2","F3","F4")] for axis in ("axial","transverse")],
-                [85, 105, 105, 105, 105]),
-          p("Values are RMSE in degrees. Axial F2 is already strong by itself. For signed transverse angle, even the best linear pair remains weak; average alone mostly describes tilt magnitude.", True),
-          h("Nested-tuned model family comparison: axial"),
-          table([["Model", "MAE", "MSE", "RMSE", "R2", "Fit ms", "Feature"]] +
-                [[x.model, f"{x.MAE:.2f}", f"{x.MSE:.1f}", f"{x.RMSE:.2f}", f"{x.R2:.3f}", f"{x.train_s*1000:.2f}", x.feature_mode] for x in R[(R.axis=="axial")&(R.configuration=="nested-tuned")].sort_values("RMSE").itertuples()],
-                [128, 58, 63, 58, 55, 65, 55], size=6.8),
-          h("Nested-tuned model family comparison: transverse signed angle"),
-          table([["Model", "MAE", "MSE", "RMSE", "R2", "Fit ms", "Feature"]] +
-                [[x.model, f"{x.MAE:.2f}", f"{x.MSE:.1f}", f"{x.RMSE:.2f}", f"{x.R2:.3f}", f"{x.train_s*1000:.2f}", x.feature_mode] for x in R[(R.axis=="transverse")&(R.configuration=="nested-tuned")].sort_values("RMSE").itertuples()],
-                [128, 58, 63, 58, 55, 65, 55], size=6.8), PageBreak()]
-
-story += [h("All requested hyperparameter configurations"),
-          p("Each row below is the grouped outer-fold score for that fixed setting, with feature choice still inside training. The family comparison on page 2 uses nested hyperparameter selection, so it is the fair final comparison.", True)]
-for axis in ("axial", "transverse"):
-    sub = R[(R.axis==axis)&(R.configuration!="nested-tuned")]
+def config_table(axis):
+    sub = R[(R.axis == axis) & (R.configuration != "nested-tuned")]
     rows = [["Model", "Configuration", "RMSE", "R2"]]
-    rows += [[x.model, x.configuration, f"{x.RMSE:.2f}", f"{x.R2:.3f}"] for x in sub.itertuples()]
-    story += [h(axis.capitalize()), table(rows, [115, 280, 55, 52], size=6.0)]
-story += [PageBreak()]
+    for x in sub.itertuples():
+        config = (x.configuration.replace("learning_rate", "lr").replace("n_estimators", "trees")
+                  .replace("n_neighbors", "k").replace("max_depth", "depth")
+                  .replace("l1_ratio", "l1").replace("kernel", "kernel")
+                  .replace("epsilon", "eps"))
+        rows.append([x.model, config, f"{x.RMSE:.2f}", f"{x.R2:.3f}"])
+    return t(rows, [75, 112, 34, 25], size=7.0, pad=5.2)
 
-story += [h("Exploration, sensor response and scaling"), figure("exploration.png"),
-          p("The scatter panels plot both FBG readings against angle; the heatmaps show Pearson correlations; boxplots flag extreme wavelength changes. The final panel shows raw, StandardScaler and MinMaxScaler distributions for one input as a visual demo. In actual validation, scalers were fitted only on training folds."),
-          p("The axial difference follows signed angle much more clearly than the average. Transverse FBG readings rise with absolute tilt in both directions, so a low signed Pearson correlation does not mean the sensor has no tilt information. Boxplot whiskers are a screening aid, not a reason to drop end angles."), PageBreak()]
+best = R[R.configuration == "nested-tuned"]
+stat = {"SLR", "MLR", "Polynomial", "Ridge", "Lasso", "Elastic Net"}
+winner = {}
+for axis in ("axial", "transverse"):
+    sub = best[best.axis == axis]
+    winner[axis] = {"stat": sub[sub.model.isin(stat)].sort_values("RMSE").iloc[0],
+                    "ml": sub[~sub.model.isin(stat)].sort_values("RMSE").iloc[0]}
 
-story += [h("Model-wise accuracy and training time"), figure("model_comparison.png"),
-          p("The four columns show MAE, RMSE, R-squared and mean outer-fold fit time for each axis. These are the nested-tuned family results from page 2. Smaller MAE/RMSE is better; larger R-squared is better. Fit times are too small and environment-dependent to claim a hardware benchmark."),
-          p("GPR is strongest on both axes in this run. Degree 3 polynomial improves axial accuracy over degree 2, but the extra flexibility does not reliably solve the transverse sign ambiguity. Greater tree depth and more forest trees do not automatically improve grouped prediction."), PageBreak()]
+story = [
+    Paragraph("FBG tilt angle prediction", styles["TitleLab"]),
+    p("<b>Md Minha Uddin</b> | 2401CS39 | <b>ML Lab 9</b> | 13 October 2026"),
+    h("Aim and data"),
+    p("I predicted axial and transverse tilt separately from the two FBG wavelength changes. I used all 37 readings in each experimental sheet, including row 1. The theoretical sheet and extra chart cells were not used. No synthetic rows or imputations."),
+    t([["Axis", "Rows", "Angle range", "Missing", "Exact repeats", "Repeated angles"],
+       ["Axial", "37", "-90 to +90 deg", "0", str(S["axial"]["duplicate_rows"]), "17 values"],
+       ["Transverse", "37", "-90 to +90 deg", "0", str(S["transverse"]["duplicate_rows"]), "17 values"]],
+      [66, 45, 105, 60, 110, 131]),
+    h("Method and one end-to-end model"),
+    p("F1 uses both wavelength changes, F2 their difference, F3 their average, and F4 difference plus average. I checked F2/F3 against the workbook columns. I used five outer GroupKFold splits by angle. Four grouped inner folds selected features and hyperparameters from training rows only. StandardScaler is inside each fitted pipeline. Metrics come from the joined outer-fold predictions."),
+    p("<b>Gaussian process example:</b> D/E changes &rarr; F1/F2/F3/F4 &rarr; grouped split &rarr; inner RMSE chooses feature and RBF/Matérn kernel &rarr; fit scaler and GPR on outer training rows &rarr; predict held-out angles &rarr; repeat five times and calculate MAE, MSE, RMSE, R2. Seed 42 is used for stochastic trees."),
+    h("Sensor responses, correlations, outliers and scaling"),
+    fig("exploration.png"),
+    p("Axial difference tracks signed angle. In transverse tilt, both FBGs mostly rise with magnitude, so the sign is harder. Boxplots flag extremes but I kept all recorded measurements. Scaling shown here is only a demo; evaluation scalers fit training folds only.", True),
+    p("Source: Kuo Li, <i>FBG biaxial tilt sensor using one optical fiber</i>, Mendeley Data, doi:10.17632/f4csv2xjk6.1, CC BY 4.0.", True),
+    PageBreak(),
+]
 
-ax_stat = R[(R.axis=="axial")&(R.configuration=="nested-tuned")&(R.model.isin(["SLR","MLR","Polynomial","Ridge","Lasso","Elastic Net"]))].sort_values("RMSE").iloc[0]
-tr_stat = R[(R.axis=="transverse")&(R.configuration=="nested-tuned")&(R.model.isin(["SLR","MLR","Polynomial","Ridge","Lasso","Elastic Net"]))].sort_values("RMSE").iloc[0]
-ax_ml = R[(R.axis=="axial")&(R.configuration=="nested-tuned")&(~R.model.isin(["SLR","MLR","Polynomial","Ridge","Lasso","Elastic Net"]))].sort_values("RMSE").iloc[0]
-tr_ml = R[(R.axis=="transverse")&(R.configuration=="nested-tuned")&(~R.model.isin(["SLR","MLR","Polynomial","Ridge","Lasso","Elastic Net"]))].sort_values("RMSE").iloc[0]
+feature_rows = [["Axis", "F1 pair", "F2 diff", "F3 average", "F4 diff+avg"]]
+feature_rows += [[axis.capitalize()] + [f"{F[(F.axis == axis) & (F.feature == key)].iloc[0].linear_grouped_RMSE:.2f}" for key in ("F1", "F2", "F3", "F4")] for axis in ("axial", "transverse")]
+story += [
+    h("Feature check: grouped linear RMSE (degrees)"),
+    t(feature_rows, [87, 107, 107, 107, 107]),
+    p("F2 is strongest for axial linear prediction. Signed transverse prediction needs information from both FBGs; F1 and F4 contain the same two underlying measurements.", True),
+    h("Nested-tuned performance: axial"), family_table("axial"),
+    h("Nested-tuned performance: signed transverse"), family_table("transverse"),
+    h("Accuracy and fit-time comparison"), fig("model_comparison.png"),
+    p("All bars use outer-fold predictions after inner-fold selection. Fit time is the mean final training fit per fold, excluding search. On 37 rows it is only a rough speed indicator.", True),
+    PageBreak(),
+]
+
+configs = Table([[config_table("axial"), "", config_table("transverse")]], colWidths=[246, 24, 246], hAlign="LEFT")
+configs.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0)]))
+top = P[(P.configuration == "nested-tuned") & (P.model == "GPR")].copy()
+top["absolute_error"] = top.residual.abs()
+worst = top.sort_values("absolute_error", ascending=False).groupby("axis").head(4)
+worst_rows = [["Axis", "Actual", "Predicted", "Abs. error", "Fold"]]
+worst_rows += [[x.axis.capitalize(), f"{x.angle:.0f}", f"{x.prediction:.1f}", f"{x.absolute_error:.1f}", str(x.fold)] for x in worst.itertuples()]
+story += [
+    h("Hyperparameter checks: every requested setting"),
+    p("Fixed-setting scores below also choose features in the inner training folds. The final family scores on page 2 use inner-fold hyperparameter selection too; I did not choose a winner by looking at outer test scores.", True),
+    t([["Axial: RMSE and R2", "Transverse: RMSE and R2"]], [258, 258], size=8),
+    configs,
+    h("Where the best ML model missed"),
+    t(worst_rows, [102, 96, 106, 112, 100], size=7),
+    p("These are the four largest held-out absolute errors for GPR on each axis. They show which individual angles are hard rather than hiding them in one average.", True),
+    PageBreak(),
+]
+
 signed, absolute = A.iloc[0], A.iloc[1]
-story += [h("Actual predictions and residuals"), figure("predictions_residuals.png"),
-          p(f"The best statistical family is {ax_stat.model} for axial ({ax_stat.RMSE:.2f} deg RMSE) and {tr_stat.model} for signed transverse ({tr_stat.RMSE:.2f} deg). The best conventional ML family is {ax_ml.model} for axial ({ax_ml.RMSE:.2f} deg) and {tr_ml.model} for transverse ({tr_ml.RMSE:.2f} deg). These plots use only outer test predictions."),
-          h("Advanced task C: signed versus absolute transverse tilt"),
-          p(f"Using the same grouped folds and a simple linear model on average wavelength change, signed angle gives RMSE {signed.RMSE:.2f} deg (R2 {signed.R2:.3f}), while absolute angle gives RMSE {absolute.RMSE:.2f} deg (R2 {absolute.R2:.3f}). That gap is the main thing I learned: the average signal tells me how far the sensor tilted, but generally not which way. Small direction clues in both channels let GPR do better, though I would not assume they stay stable on a new sensor."),
-          h("My conclusion"),
-          p("For accurate calibration on these 37 readings, I would pick Matérn GPR for axial tilt and also test it for signed transverse tilt. For a simple real-time monitor, a linear differential model is easier to explain and fast for axial angle. I would report transverse magnitude from the average unless direction has been separately calibrated and checked on more runs. The 37-row dataset is tiny, so these errors are evidence for this experiment, not a guarantee in deployment."),
-          p('Public code and full row-wise results: <link href="https://github.com/mdminhaj-2106/ML_Lab9" color="blue">https://github.com/mdminhaj-2106/ML_Lab9</link>.', True)]
+story += [
+    h("Actual versus predicted angles and residuals"),
+    fig("predictions_residuals.png"),
+    p(f"Best statistical model: {winner['axial']['stat'].model} on axial ({winner['axial']['stat'].RMSE:.2f} deg RMSE), {winner['transverse']['stat'].model} on transverse ({winner['transverse']['stat'].RMSE:.2f} deg). Best conventional ML model: {winner['axial']['ml'].model} on axial ({winner['axial']['ml'].RMSE:.2f} deg), {winner['transverse']['ml'].model} on transverse ({winner['transverse']['ml'].RMSE:.2f} deg). These are held-out predictions."),
+    h("Advanced task: signed versus absolute transverse tilt"),
+    t([["Target", "Input/model", "MAE", "RMSE", "R2"],
+       ["Signed angle", "Average change / linear", f"{signed.MAE:.2f}", f"{signed.RMSE:.2f}", f"{signed.R2:.3f}"],
+       ["Absolute angle", "Average change / linear", f"{absolute.MAE:.2f}", f"{absolute.RMSE:.2f}", f"{absolute.R2:.3f}"]],
+      [110, 178, 76, 76, 76]),
+    p("The average change tells me the amount of transverse tilt much better than its direction. Positive and negative angles often produce similar readings. GPR finds some direction clues from both channels, but I would check those on more sensor runs before trusting the sign."),
+    h("What I take from it"),
+    p("Degree 3 polynomial improves axial accuracy over a straight line, but added complexity is not always useful: deeper trees and more forest trees do not consistently win. Feature choice matters: axial F2 is useful alone, while signed transverse F3 is weak alone. Axial errors are smaller because its differential response tracks sign more directly."),
+    p("For best accuracy on these measurements I would use Matérn GPR. For a simple real-time axial monitor, I would also consider linear regression on the differential signal because it is easy to calibrate and fast. For transverse monitoring I would report magnitude unless direction is separately validated. This is still only 37 readings per axis."),
+    p('<link href="https://github.com/mdminhaj-2106/ML_Lab9" color="blue">github.com/mdminhaj-2106/ML_Lab9</link> has the code, notebook and row-wise results.', True),
+]
 
 def footer(canvas, doc):
     canvas.setFont("Helvetica", 7)
-    canvas.setFillColor(colors.HexColor("#61727d"))
-    canvas.drawString(38, 19, "FBG tilt regression | Lab experiment 06")
-    canvas.drawRightString(A4[0]-38, 19, f"Page {doc.page}")
+    canvas.setFillColor(colors.HexColor("#657783"))
+    canvas.drawString(38, 19, "Md Minha Uddin | 2401CS39 | ML Lab 9")
+    canvas.drawRightString(A4[0] - 38, 19, str(doc.page))
 
-doc = SimpleDocTemplate(str(PDF), pagesize=A4, leftMargin=38, rightMargin=38, topMargin=34, bottomMargin=34)
+doc = SimpleDocTemplate(str(PDF), pagesize=A4, leftMargin=38, rightMargin=38, topMargin=33, bottomMargin=32)
 doc.build(story, onFirstPage=footer, onLaterPages=footer)
 print(PDF)

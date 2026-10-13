@@ -1,9 +1,9 @@
 # FBG tilt regression lab
 
-This is Md Minha Uddin's (2401CS39) work for Experiment 06 (13 October 2026).
+This is Md Minha Uddin's (2401CS39) ML Lab 9 work (13 October 2026).
 Public code: https://github.com/mdminhaj-2106/ML_Lab9
 The submission file is `Md_Minha_Uddin_2401CS39_lab9.pdf` (six A4 pages).
-`Md_Minha_Uddin_2401CS39_lab9.ipynb` is a short walkthrough;
+`Md_Minha_Uddin_2401CS39_lab9.ipynb` is the executed, task-wise notebook;
 `Md_Minha_Uddin_2401CS39_lab9.py` runs the full experiment; `make_report.py`
 rebuilds the PDF from the saved results.
 
