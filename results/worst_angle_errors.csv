@@ -52,7 +52,7 @@ transverse,Elastic Net,nested-tuned,3,27,-80.0,-12.67642481839556,-67.3235751816
 transverse,Polynomial,nested-tuned,1,37,0.0,60.468607731173954,-60.468607731173954,F4,degree=3,60.468607731173954
 transverse,KNN,nested-tuned,2,5,40.0,-20.0,60.0,F4,n_neighbors=3,60.0
 transverse,Polynomial,nested-tuned,4,10,90.0,35.20587417885666,54.79412582114334,F4,degree=2,54.79412582114334
-transverse,KNN,nested-tuned,3,12,70.0,15.714285714285714,54.285714285714285,F4,n_neighbors=7,54.285714285714285
+transverse,KNN,nested-tuned,3,8,70.0,15.714285714285714,54.285714285714285,F4,n_neighbors=7,54.285714285714285
 transverse,Polynomial,nested-tuned,3,4,30.0,-20.00525331735723,50.00525331735723,F1,degree=2,50.00525331735723
 transverse,GPR,nested-tuned,4,3,20.0,-23.849183197068164,43.849183197068164,F4,kernel=RBF,43.849183197068164
 transverse,GPR,nested-tuned,4,10,90.0,52.45126525339051,37.54873474660949,F4,kernel=RBF,37.54873474660949
@@ -93,22 +93,22 @@ axial,GPR,nested-tuned,5,28,-90.0,-79.5008224956744,-10.499177504325601,F1,kerne
 axial,Random Forest,nested-tuned,1,19,0.0,10.4,-10.4,F1,n_estimators=50,10.4
 axial,Gradient Boosting,nested-tuned,4,10,90.0,79.99684315895303,10.003156841046973,F4,"learning_rate=0.1, n_estimators=100",10.003156841046973
 axial,Gradient Boosting,nested-tuned,2,5,40.0,29.99903252255383,10.00096747744617,F1,"learning_rate=0.1, n_estimators=100",10.00096747744617
-axial,Decision Tree,nested-tuned,4,7,60.0,70.0,-10.0,F2,max_depth=5,10.0
-axial,Decision Tree,nested-tuned,3,12,70.0,60.0,10.0,F1,max_depth=5,10.0
+axial,Decision Tree,nested-tuned,1,25,-60.0,-70.0,10.0,F2,max_depth=5,10.0
+axial,Decision Tree,nested-tuned,2,21,-20.0,-10.0,-10.0,F2,max_depth=5,10.0
 axial,Decision Tree,nested-tuned,3,16,30.0,40.0,-10.0,F1,max_depth=5,10.0
-axial,Decision Tree,nested-tuned,3,4,30.0,20.0,10.0,F1,max_depth=5,10.0
-axial,Decision Tree,nested-tuned,2,35,-20.0,-30.0,10.0,F2,max_depth=5,10.0
+axial,Decision Tree,nested-tuned,3,12,70.0,60.0,10.0,F1,max_depth=5,10.0
+axial,Decision Tree,nested-tuned,1,31,-60.0,-70.0,10.0,F2,max_depth=5,10.0
 axial,Random Forest,nested-tuned,5,14,50.0,59.9,-9.899999999999999,F1,n_estimators=100,9.899999999999999
-axial,Ridge,nested-tuned,2,11,80.0,70.32769357237072,9.67230642762928,F2,alpha=0.1,9.67230642762928
 axial,Ridge,nested-tuned,2,9,80.0,70.32769357237072,9.67230642762928,F2,alpha=0.1,9.67230642762928
+axial,Ridge,nested-tuned,2,11,80.0,70.32769357237072,9.67230642762928,F2,alpha=0.1,9.67230642762928
 axial,Lasso,nested-tuned,2,11,80.0,70.42946757257245,9.570532427427551,F2,alpha=0.1,9.570532427427551
 axial,Lasso,nested-tuned,2,9,80.0,70.42946757257245,9.570532427427551,F2,alpha=0.1,9.570532427427551
 axial,GPR,nested-tuned,4,10,90.0,80.55819254516236,9.441807454837644,F1,kernel=Matern,9.441807454837644
-axial,SLR,nested-tuned,2,9,80.0,70.57733722440388,9.422662775596123,F2,default,9.422662775596123
 axial,SLR,nested-tuned,2,11,80.0,70.57733722440388,9.422662775596123,F2,default,9.422662775596123
+axial,SLR,nested-tuned,2,9,80.0,70.57733722440388,9.422662775596123,F2,default,9.422662775596123
 axial,MLR,nested-tuned,5,18,10.0,18.62270943373957,-8.622709433739569,F1,default,8.622709433739569
 axial,Ridge,nested-tuned,5,18,10.0,18.564366034399875,-8.564366034399875,F4,alpha=0.1,8.564366034399875
-axial,Elastic Net,nested-tuned,3,29,-80.0,-71.60757241718504,-8.39242758281496,F1,"alpha=0.1, l1_ratio=0.5",8.39242758281496
+axial,Elastic Net,nested-tuned,3,27,-80.0,-71.60757241718504,-8.39242758281496,F1,"alpha=0.1, l1_ratio=0.5",8.39242758281496
 axial,SLR,nested-tuned,5,14,50.0,57.61953319737139,-7.619533197371389,F2,default,7.619533197371389
 axial,MLR,nested-tuned,2,11,80.0,72.60506440308882,7.394935596911182,F4,default,7.394935596911182
 axial,MLR,nested-tuned,2,9,80.0,72.60506440308882,7.394935596911182,F4,default,7.394935596911182

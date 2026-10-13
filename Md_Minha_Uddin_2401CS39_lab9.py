@@ -76,11 +76,13 @@ def model_pipe(estimator):
     return Pipeline([("scale", StandardScaler()), ("model", clone(estimator))])
 
 
-def evaluate(df, axis):
+def evaluate(df, axis, selected_models=None):
     groups, y = df.angle.to_numpy(), df.angle.to_numpy()
     outer = GroupKFold(5)
     records, predictions, candidate_folds = [], [], []
     for name, config, estimator, feature_options in specs():
+        if selected_models is not None and name not in selected_models:
+            continue
         oof = np.full(len(df), np.nan)
         chosen, fit_seconds = [], []
         for fold, (train, test) in enumerate(outer.split(df, y, groups), 1):
@@ -121,6 +123,8 @@ def evaluate(df, axis):
     # Report one fair, nested-tuned result per family. The candidates above also give
     # the requested hyperparameter comparison, but their outer scores are not used to tune.
     for name in dict.fromkeys(row[0] for row in specs()):
+        if selected_models is not None and name not in selected_models:
+            continue
         oof = np.full(len(df), np.nan)
         choices, chosen_features, fit_seconds = [], [], []
         for fold in range(1, 6):
