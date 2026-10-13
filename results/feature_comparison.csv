@@ -1,0 +1,9 @@
+axis,feature,columns,linear_grouped_RMSE
+axial,F1,d1+d2,6.684451221882763
+axial,F2,diff,6.174735853953217
+axial,F3,avg,55.419892312272744
+axial,F4,diff+avg,6.684451221882756
+transverse,F1,d1+d2,46.54156082260215
+transverse,F2,diff,53.88995340263027
+transverse,F3,avg,53.29301949985923
+transverse,F4,diff+avg,46.54156082260209
